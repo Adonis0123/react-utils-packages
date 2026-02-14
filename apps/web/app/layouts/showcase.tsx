@@ -136,6 +136,13 @@ export function LayoutsDemo({ compact = false }: { compact?: boolean }) {
         </Button>
       </div>
       <ComposedPage defaultPage={defaultPage} />
+      <p className='text-xs text-slate-400'>
+        Inspired by{' '}
+        <a href='https://github.com/yunsii/react-dx' className='underline hover:text-slate-600' target='_blank' rel='noopener noreferrer'>
+          react-dx
+        </a>
+        . Special thanks to the original author for the foundational ideas.
+      </p>
     </div>
   )
 }

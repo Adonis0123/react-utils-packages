@@ -1,14 +1,9 @@
-import { readFileSync } from 'fs'
-import { resolve } from 'path'
 import Link from 'next/link'
 
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@adonis-kit/ui'
 import { CopyButton } from './copy-button'
 import { features } from '@/lib/features'
-
-const registryPath = resolve(process.cwd(), '../../registry.json')
-const registry = JSON.parse(readFileSync(registryPath, 'utf-8'))
-const components = registry.items as { name: string; title: string; description: string }[]
+import { getRegistryItems } from '@/lib/registry-items'
 
 function CodeBlock({ children, copyable }: { children: string; copyable?: string }) {
   return (
@@ -21,7 +16,10 @@ function CodeBlock({ children, copyable }: { children: string; copyable?: string
   )
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+  const components = await getRegistryItems()
+  const hasComponents = components.length > 0
+
   return (
     <div className='grid gap-6'>
       <Card>
@@ -66,6 +64,12 @@ export default function HomePage() {
           {/* Available Components */}
           <div className='grid gap-3'>
             <h3 className='text-base font-semibold text-slate-900'>Available Components</h3>
+            {!hasComponents && (
+              <p className='rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800'>
+                Component list is temporarily unavailable. Registry metadata could not be loaded, but the page
+                is still working.
+              </p>
+            )}
             <div className='grid gap-3 sm:grid-cols-2'>
               {components.map((comp) => (
                 <div key={comp.name} className='min-w-0 rounded-lg border border-slate-200 p-4 grid gap-3'>
