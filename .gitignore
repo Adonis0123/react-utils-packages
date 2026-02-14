@@ -14,3 +14,4 @@ coverage
 
 /.claude/skills
 /.claude/skills/**
+/.claude/settings.local.json
