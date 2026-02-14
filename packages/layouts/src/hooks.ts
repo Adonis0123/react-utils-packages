@@ -1,18 +1,23 @@
+import type React from 'react'
 import { useContext } from 'react'
 
+import { getDisplayName } from './internal/react-nodes'
 import { AllPagePropsContext } from './context'
+import type { AnyComponent } from './context'
 
-export function useAllPageProps() {
-  const context = useContext(AllPagePropsContext)
-  return context
-}
+type PropsOf<C extends AnyComponent> = React.ComponentProps<C>
 
-export function usePageProps<PageProps>(component?: React.ComponentType<PageProps>) {
-  const allPageProps = useAllPageProps()
+export function useLayoutProps(): ReadonlyMap<AnyComponent, unknown>
+export function useLayoutProps<C extends AnyComponent>(component: C): Readonly<PropsOf<C>>
+export function useLayoutProps<C extends AnyComponent>(component?: C) {
+  const allPageProps = useContext(AllPagePropsContext)
+
   if (component) {
-    return allPageProps.get(component) as PageProps
+    if (!allPageProps.has(component)) {
+      throw new Error(`useLayoutProps: props for "${getDisplayName(component)}" were not found in context`)
+    }
+    return allPageProps.get(component) as Readonly<PropsOf<C>>
   }
-  // keys order: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map#objects_vs._maps
-  const mapKeys = Array.from(allPageProps.keys())
-  return allPageProps.get(mapKeys[mapKeys.length - 1]) as PageProps
+
+  return allPageProps as ReadonlyMap<AnyComponent, unknown>
 }

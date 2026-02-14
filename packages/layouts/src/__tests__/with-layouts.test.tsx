@@ -2,7 +2,7 @@ import React from 'react'
 import TestRenderer from 'react-test-renderer'
 import { act } from 'react-test-renderer'
 
-import { useAllPageProps, usePageProps } from '../hooks'
+import { useLayoutProps } from '../hooks'
 import { withLayouts } from '../with-layouts'
 
 describe('withLayouts', () => {
@@ -30,18 +30,18 @@ describe('withLayouts', () => {
     expect(page.children.join('')).toBe('page')
   })
 
-  it('assigns displayName to anonymous layouts', () => {
+  it('does not mutate anonymous layout displayName during render', () => {
     const Page: React.FC = () => null
-    Page.displayName = 'TestPage'
 
     const AnonymousLayout: React.FC<React.PropsWithChildren> = ({ children }) => <>{children}</>
+    expect(AnonymousLayout.displayName).toBeUndefined()
 
     const Wrapped = withLayouts(Page, [AnonymousLayout])
     act(() => {
       TestRenderer.create(<Wrapped />)
     })
 
-    expect(AnonymousLayout.displayName).toBe('Layout1_TestPage')
+    expect(AnonymousLayout.displayName).toBeUndefined()
   })
 
   it('hoists selected static properties', () => {
@@ -55,7 +55,7 @@ describe('withLayouts', () => {
     expect(Wrapped.routeMeta).toEqual({ auth: true })
   })
 
-  it('usePageProps() returns current page props', () => {
+  it('useLayoutProps(component) returns target component props', () => {
     interface PageProps {
       title: string
     }
@@ -63,7 +63,7 @@ describe('withLayouts', () => {
     const Page: React.FC<PageProps> = ({ title }) => <span>{title}</span>
 
     const Layout: React.FC<React.PropsWithChildren> = ({ children }) => {
-      const props = usePageProps<PageProps>()
+      const props = useLayoutProps(Page)
       return <div data-title={props.title}>{children}</div>
     }
 
@@ -77,7 +77,7 @@ describe('withLayouts', () => {
     expect(node).toBeTruthy()
   })
 
-  it('usePageProps(component) returns target component props', () => {
+  it('useLayoutProps() returns all component props map', () => {
     interface PageProps {
       count: number
     }
@@ -85,8 +85,13 @@ describe('withLayouts', () => {
     const Page: React.FC<PageProps> = ({ count }) => <span>{count}</span>
 
     const Layout: React.FC<React.PropsWithChildren> = ({ children }) => {
-      const props = usePageProps<PageProps>(Page)
-      return <div data-count={String(props.count)}>{children}</div>
+      const allLayoutProps = useLayoutProps()
+      const pageProps = allLayoutProps.get(Page) as PageProps | undefined
+      return (
+        <div data-has-page={String(allLayoutProps.has(Page))} data-count={String(pageProps?.count)}>
+          {children}
+        </div>
+      )
     }
 
     const Wrapped = withLayouts(Page, [Layout])
@@ -95,29 +100,29 @@ describe('withLayouts', () => {
       renderer = TestRenderer.create(<Wrapped count={7} />)
     })
 
-    const node = renderer.root.findByProps({ 'data-count': '7' })
+    const node = renderer.root.findByProps({ 'data-has-page': 'true', 'data-count': '7' })
     expect(node).toBeTruthy()
   })
 
-  it('useAllPageProps can read props from context', () => {
+  it('throws when target component props are missing', () => {
     interface PageProps {
       id: string
     }
 
     const Page: React.FC<PageProps> = ({ id }) => <span>{id}</span>
+    const MissingComponent: React.FC<{ missing: boolean }> = () => null
 
     const Layout: React.FC<React.PropsWithChildren> = ({ children }) => {
-      const allPageProps = useAllPageProps()
-      return <div data-has-page={String(allPageProps.has(Page))}>{children}</div>
+      useLayoutProps(MissingComponent)
+      return <>{children}</>
     }
 
     const Wrapped = withLayouts(Page, [Layout])
-    let renderer!: TestRenderer.ReactTestRenderer
-    act(() => {
-      renderer = TestRenderer.create(<Wrapped id='abc' />)
-    })
 
-    const node = renderer.root.findByProps({ 'data-has-page': 'true' })
-    expect(node).toBeTruthy()
+    expect(() => {
+      act(() => {
+        TestRenderer.create(<Wrapped id='abc' />)
+      })
+    }).toThrow('useLayoutProps: props for "MissingComponent" were not found in context')
   })
 })

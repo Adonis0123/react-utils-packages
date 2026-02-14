@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 
-import { useAllPageProps, usePageProps, withLayouts } from '@react-utils/layouts'
+import { useLayoutProps, withLayouts } from '@react-utils/layouts'
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@react-utils/ui'
 
 interface PageProps {
@@ -45,9 +45,9 @@ const InternalLayout2: React.FC<React.PropsWithChildren> = ({ children }) => {
   const renderCountRef = useRef(0)
   renderCountRef.current += 1
 
-  const allPageProps = useAllPageProps()
-  const pageProps = usePageProps<PageProps>()
-  const explicitPageProps = usePageProps<PageProps>(PageContent)
+  const allLayoutProps = useLayoutProps()
+  const pageProps = useLayoutProps(PageContent)
+  const currentLayoutProps = useLayoutProps(InternalLayout2)
 
   return (
     <Card className='border-blue-300 bg-blue-50'>
@@ -57,9 +57,9 @@ const InternalLayout2: React.FC<React.PropsWithChildren> = ({ children }) => {
       </CardHeader>
       <CardContent className='space-y-2 text-sm text-slate-700'>
         <p>renderCount: {renderCountRef.current}</p>
-        <p>allPageProps.size: {allPageProps.size}</p>
-        <p>usePageProps(): {pageProps?.defaultPage}</p>
-        <p>usePageProps(PageContent): {explicitPageProps?.defaultPage}</p>
+        <p>allLayoutProps.size: {allLayoutProps.size}</p>
+        <p>useLayoutProps(PageContent): {pageProps.defaultPage}</p>
+        <p>useLayoutProps(InternalLayout2).children: {currentLayoutProps.children ? 'yes' : 'no'}</p>
         {children}
       </CardContent>
     </Card>
@@ -68,14 +68,14 @@ const InternalLayout2: React.FC<React.PropsWithChildren> = ({ children }) => {
 
 const Layout2 = withLayouts(InternalLayout2, [
   ({ children }) => {
-    const pageProps = usePageProps<PageProps>()
+    const pageProps = useLayoutProps(PageContent)
     return (
       <Card className='border-indigo-300 bg-indigo-50'>
         <CardHeader>
           <CardTitle>Layout2 Inner</CardTitle>
         </CardHeader>
         <CardContent className='space-y-2 text-sm text-slate-700'>
-          <p>Current page defaultPage: {pageProps?.defaultPage}</p>
+          <p>Current page defaultPage: {pageProps.defaultPage}</p>
           {children}
         </CardContent>
       </Card>

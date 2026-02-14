@@ -1,49 +1,54 @@
-# react-utils-packages 发包与发布流程
+# react-utils-packages 发布流程（npm + Vercel）
 
-本文档覆盖两条发布链路：
+本文档只聚焦两条发布主线：
 
-1. npm 包发布（`@react-utils/layouts`、`@react-utils/ui`）
-2. shadcn Registry 发布（`/registry.json`、`/r/*.json`）
+1. npm 包发布：`@react-utils/layouts`、`@react-utils/ui`
+2. Vercel 部署：`apps/web`（包含 shadcn registry 静态入口）
 
-## 1. 发布目标
+## 1. 一次性准备
 
-- npm 安装：
-  - `pnpm add @react-utils/layouts`
-  - `pnpm add @react-utils/ui`
-- shadcn 安装：
-  - URL 模式：`pnpm dlx shadcn@latest add https://<your-domain>/r/button.json`
-  - 命名空间模式：`pnpm dlx shadcn@latest add @react-utils/button`
+### 1.1 GitHub Actions（用于 npm 自动发布）
 
-## 2. 一次性准备
+仓库 `Settings -> Secrets and variables -> Actions` 需要有：
 
-### 2.1 GitHub Secrets
+- `NPM_TOKEN`：建议 npm automation token，具备发布权限
+- `GITHUB_TOKEN`：GitHub Actions 自动提供，无需手工创建
 
-在仓库 `Settings -> Secrets and variables -> Actions` 配置：
+当前 npm 发布工作流文件：`.github/workflows/release.yml`  
+触发条件：`push` 到 `main` 分支。
 
-- `NPM_TOKEN`：npm 发布 token（建议 npm automation token）
-- `GITHUB_TOKEN`：由 GitHub Actions 自动提供
+### 1.2 Vercel（用于 web 与 registry 访问）
 
-### 2.2 Vercel 配置
+Vercel Project 建议配置：
 
-- Root Directory: `apps/web`
-- Build Command: `pnpm turbo run build --filter=web`
-- 确认公网可访问：
-  - `https://<your-domain>/registry.json`
-  - `https://<your-domain>/r/button.json`
+- Root Directory：`apps/web`
+- Build Command：`pnpm turbo run build --filter=web`
 
-### 2.3 域名占位符替换
+部署后需要可访问：
 
-将以下文件内的 `https://react-utils.vercel.app` 改成你的真实域名：
+- `https://<your-domain>/registry.json`
+- `https://<your-domain>/r/button.json`
 
-- `apps/web/components.json`
-- `apps/web/registry.json`
+### 1.3 域名替换（首次上线或域名变更时）
+
+将 `https://react-utils.vercel.app` 替换为你的真实域名：
+
 - `registry.json`
+- `apps/web/components.json`
+- `apps/web/registry.json`（如保留该镜像文件，也一起维护）
 
-## 3. 日常发布（推荐：CI 自动）
+## 2. 先判断这次改动走哪条链路
 
-### 步骤 1：开发与本地验证
+| 改动类型 | 需要 `pnpm changeset` | 需要 `pnpm registry:build` | 主要发布结果 |
+| --- | --- | --- | --- |
+| 仅改 `packages/layouts` / `packages/ui`（对外包能力变化） | 是 | 否 | npm 新版本 |
+| 仅改 `registry/**` / `registry.json` | 否 | 是 | Vercel 上 `/r/*.json` 更新 |
+| 仅改 `apps/web/**` 页面展示 | 否 | 否（除非改了 registry 源） | Vercel 站点更新 |
+| 同时改包与 registry/web | 是 | 是 | npm + Vercel 都更新 |
 
-在仓库根目录执行：
+## 3. npm 发布流程（Changesets + CI）
+
+### 步骤 1：本地校验
 
 ```bash
 pnpm install
@@ -52,112 +57,120 @@ pnpm test
 pnpm typecheck
 ```
 
-### 步骤 2：生成 Registry 产物
-
-```bash
-pnpm registry:build
-```
-
-该命令会生成：
-
-- `apps/web/public/r/*.json`
-- `apps/web/public/registry.json`
-
-### 步骤 3：生成 changeset（仅 npm 包变更需要）
+### 步骤 2：仅在“包发布”场景生成 changeset
 
 ```bash
 pnpm changeset
 ```
 
-选择受影响包（如 `@react-utils/ui` / `@react-utils/layouts`）和版本级别（patch/minor/major）。
+为受影响包选择版本级别（patch/minor/major）。
 
-### 步骤 4：提交并发起 PR
+### 步骤 3：提交 PR 并合并到 `main`
 
 ```bash
 git add .
-git commit -m "feat(ui): add/update ..."
+git commit -m "feat(ui): ..."
 git push
 ```
 
-### 步骤 5：合并到 `main`
+合并到 `main` 后，`release.yml` 会运行：
 
-- 合并后触发 `.github/workflows/release.yml`
-- 工作流会执行：
-  - `pnpm install --frozen-lockfile`
-  - `pnpm turbo run build --filter=@react-utils/layouts --filter=@react-utils/ui`
-  - `changesets/action`
+1. 安装依赖
+2. 构建可发布包（`@react-utils/layouts`、`@react-utils/ui`）
+3. 执行 `changesets/action`
 
-### 步骤 6：Changesets 自动发布行为
+### 步骤 4：发布行为说明
 
-- 如果存在未消费的 changeset：先生成/更新 Release PR
-- 合并 Release PR 后：自动执行 npm publish
+- 有未消费 changeset：创建或更新 Release PR
+- 合并 Release PR 后：自动 `npm publish`
 
-## 4. 手动发布（兜底流程）
+### 步骤 5：发布后检查
 
-仅在 CI 不可用时使用。
+```bash
+npm view @react-utils/layouts version
+npm view @react-utils/ui version
+```
+
+## 4. Vercel 发布流程（web + registry）
+
+### 步骤 1：如果改了 registry 源，先生成静态产物
+
+```bash
+pnpm registry:build
+```
+
+会更新：
+
+- `apps/web/public/r/*.json`
+- `apps/web/public/registry.json`
+
+注意：这些是要随代码提交的产物，不要漏提交。
+
+### 步骤 2：提交 PR，检查 Preview
+
+提交后在 Vercel Preview 验证页面与接口：
+
+- `/registry.json`
+- `/r/button.json`
+- `/r/card.json`
+
+### 步骤 3：合并到 `main`，触发 Production 部署
+
+上线后再做一次线上验证：
+
+```bash
+pnpm dlx shadcn@latest add https://<your-domain>/r/button.json
+```
+
+## 5. 同时发布 npm + Vercel（常见组合）
+
+当一次改动既影响包又影响 registry/web，建议顺序：
 
 ```bash
 pnpm install
 pnpm build
 pnpm test
 pnpm typecheck
+pnpm changeset
 pnpm registry:build
-pnpm version-packages
 git add .
-git commit -m "chore(release): version packages"
-git push --follow-tags
+git commit -m "feat: ..."
+git push
+```
+
+然后通过 PR 合并到 `main`，让两条链路各自完成自动发布。
+
+## 6. 手动兜底（仅 CI 异常时）
+
+### npm 手动发布
+
+```bash
+pnpm install
+pnpm build
+pnpm test
+pnpm typecheck
+pnpm version-packages
 pnpm release
 ```
 
-## 5. 发布后验收
+### Vercel 手动发布
 
-### npm 验收
+在 Vercel Dashboard 对目标提交执行 Redeploy（Production），并重新验证 `/registry.json` 与 `/r/*.json`。
 
-```bash
-pnpm -C packages/ui pack
-pnpm -C packages/layouts build
-```
-
-检查 npm 页面是否出现新版本：
-
-- `@react-utils/ui`
-- `@react-utils/layouts`
-
-### Registry 验收
-
-验证以下 URL 可访问：
-
-- `https://<your-domain>/registry.json`
-- `https://<your-domain>/r/button.json`
-- `https://<your-domain>/r/card.json`
-
-并在临时项目执行：
-
-```bash
-pnpm dlx shadcn@latest add https://<your-domain>/r/button.json
-```
-
-## 6. 常见问题
+## 7. 常见问题
 
 ### Q1: `NPM_TOKEN is not set`
 
-- 检查 GitHub Actions Secret 是否配置到当前仓库
-- token 是否具有对应 scope 的 publish 权限
+- 检查仓库 Actions Secrets 是否配置 `NPM_TOKEN`
+- 检查 token 是否具备 npm publish 权限
 
-### Q2: Release workflow 失败但 web 可正常构建
+### Q2: npm 没发出去，但 Vercel 正常
 
-- 当前 release workflow 只构建可发布包（`layouts`/`ui`）
-- 请先修复包构建问题，不需要先修复 web 展示问题
+- 这是正常隔离现象：`release.yml` 只处理 npm 包
+- 优先查看 `.github/workflows/release.yml` 的执行日志
 
-### Q3: shadcn add 404
+### Q3: `shadcn add` 报 404
 
-- 先执行 `pnpm registry:build`
-- 再检查 `apps/web/public/r/*.json` 是否被提交并部署
-- 检查 `components.json` 里的 registry 域名是否为线上真实域名
-
-## 7. 推荐分支策略
-
-- 功能开发：`feature/*`
-- 发版由 `main` 驱动（changesets 自动模式）
-- 避免直接在 `main` 手工改版本号
-
+- 是否执行并提交了 `pnpm registry:build` 产物
+- 是否部署到了正确域名
+- `apps/web/components.json` 的 registry 域名是否已更新

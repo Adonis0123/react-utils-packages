@@ -11,7 +11,7 @@ export const features: FeatureItem[] = [
     key: 'layouts',
     title: 'withLayouts',
     description:
-      'Nested layout composition showcase based on @react-utils/layouts, including usePageProps and context behaviors.',
+      'Nested layout composition showcase based on @react-utils/layouts, including useLayoutProps and context behaviors.',
     href: '/features/layouts',
     tags: ['react-utils/layouts', 'composition', 'context'],
   },
@@ -24,4 +24,3 @@ export const features: FeatureItem[] = [
     tags: ['shadcn', 'registry', 'distribution'],
   },
 ]
-

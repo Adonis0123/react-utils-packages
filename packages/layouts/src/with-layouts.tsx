@@ -2,13 +2,19 @@ import React, { useMemo } from 'react'
 
 import { getDisplayName } from './internal/react-nodes'
 import { AllPagePropsContext } from './context'
-import { useAllPageProps } from './hooks'
+import { useLayoutProps } from './hooks'
 
-import type { AllPagePropsValue } from './context'
+import type { AllPagePropsValue, AnyComponent } from './context'
 
-export interface WithLayoutsOptions {
+type PropsOf<C extends AnyComponent> = React.ComponentProps<C>
+type LayoutComponent = React.ComponentType<React.PropsWithChildren>
+
+export interface WithLayoutsOptions<
+  C extends AnyComponent,
+  K extends readonly (keyof C & string)[] = readonly [],
+> {
   /** page properties to hoist */
-  propertiesHoist?: string[]
+  propertiesHoist?: K
 }
 
 /**
@@ -28,38 +34,29 @@ export interface WithLayoutsOptions {
  * </Layout2>
  * ```
  */
-export function withLayouts<PageProps = Record<string, any>>(
-  Page: React.ComponentType<PageProps>,
-  Layouts: React.ComponentType<{
-    children: React.ReactNode
-  }>[],
-  options: WithLayoutsOptions = {},
-) {
+export function withLayouts<
+  C extends AnyComponent,
+  K extends readonly (keyof C & string)[] = readonly [],
+>(
+  Page: C,
+  Layouts: readonly LayoutComponent[],
+  options: WithLayoutsOptions<C, K> = {},
+): React.FC<PropsOf<C>> & Pick<C, K[number]> {
   const { propertiesHoist = [] } = options
   const pageDisplayName = getDisplayName(Page)
 
-  const WithLayoutsPage: React.FC<PageProps> = (pageProps) => {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const allPageProps = useAllPageProps()
+  const WithLayoutsPage: React.FC<PropsOf<C>> = (pageProps) => {
+    const allPageProps = useLayoutProps()
 
-    let children = <Page {...(pageProps as any)} />
+    let children = <Page {...pageProps} />
 
-    for (let index = 0; index < Layouts.length; index++) {
-      const Layout = Layouts[index]
-
-      if (!Layout.displayName) {
-        Layout.displayName = `Layout${index + 1}_${pageDisplayName}`
-      }
-
+    for (const Layout of Layouts) {
       children = <Layout>{children}</Layout>
     }
 
-    const pagePropsValue = useMemo(() => {
-      const state: AllPagePropsValue = new Map()
-      allPageProps.forEach((value, key) => {
-        state.set(key, value)
-      })
-      state.set(Page, pageProps as Record<string, any>)
+    const pagePropsValue = useMemo<AllPagePropsValue>(() => {
+      const state: AllPagePropsValue = new Map(allPageProps)
+      state.set(Page, pageProps)
       return state
     }, [allPageProps, pageProps])
 
@@ -73,11 +70,17 @@ export function withLayouts<PageProps = Record<string, any>>(
   }
 
   WithLayoutsPage.displayName = `WithLayouts(${pageDisplayName})`
+
+  const WrappedPage = WithLayoutsPage as React.FC<PropsOf<C>> & Pick<C, K[number]>
+
   propertiesHoist.forEach((item) => {
     if (item in Page) {
-      ;(WithLayoutsPage as any)[item] = (Page as any)[item]
+      const descriptor = Object.getOwnPropertyDescriptor(Page, item)
+      if (descriptor) {
+        Object.defineProperty(WrappedPage, item, descriptor)
+      }
     }
   })
 
-  return WithLayoutsPage
+  return WrappedPage
 }

@@ -1,6 +1,6 @@
 export { withLayouts } from './with-layouts'
 export type { WithLayoutsOptions } from './with-layouts'
 
-export { useAllPageProps, usePageProps } from './hooks'
+export { useLayoutProps } from './hooks'
 
-export type { AllPagePropsValue } from './context'
+export type { AllPagePropsValue, AnyComponent } from './context'

@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react'
 
-import { useAllPageProps, usePageProps, withLayouts } from '@react-utils/layouts'
+import { useLayoutProps, withLayouts } from '@react-utils/layouts'
 
 interface PageProps {
   defaultPage: number
@@ -34,17 +34,17 @@ const InternalLayout2: React.FC<React.PropsWithChildren<{ mark?: string }>> = ({
   const renderCountRef = useRef(0)
   renderCountRef.current += 1
 
-  const allPageProps = useAllPageProps()
-  const pageProps = usePageProps<PageProps>()
-  const explicitPageProps = usePageProps<PageProps>(PageContent)
+  const allLayoutProps = useLayoutProps()
+  const pageProps = useLayoutProps(PageContent)
+  const currentLayoutProps = useLayoutProps(InternalLayout2)
 
   return (
     <section className='panel panel-l2'>
       <div className='panel-title'>Layout2 Start</div>
       <p>renderCount: {renderCountRef.current}</p>
-      <p>Map size (AllPageProps): {allPageProps.size}</p>
-      <p>usePageProps(): {pageProps?.defaultPage}</p>
-      <p>usePageProps(PageContent): {explicitPageProps?.defaultPage}</p>
+      <p>Map size (AllLayoutProps): {allLayoutProps.size}</p>
+      <p>useLayoutProps(PageContent): {pageProps.defaultPage}</p>
+      <p>useLayoutProps(InternalLayout2).mark: {currentLayoutProps.mark ?? 'n/a'}</p>
       {children}
       <div className='panel-title'>Layout2 End</div>
     </section>
@@ -53,11 +53,13 @@ const InternalLayout2: React.FC<React.PropsWithChildren<{ mark?: string }>> = ({
 
 const Layout2 = withLayouts(InternalLayout2, [
   ({ children }) => {
-    const pageProps = usePageProps<PageProps>()
+    const pageProps = useLayoutProps(PageContent)
+    const layoutProps = useLayoutProps(InternalLayout2)
     return (
       <section className='panel panel-l2x'>
         <div className='panel-title'>Layout2-Inner Start</div>
-        <p>Current page defaultPage: {pageProps?.defaultPage}</p>
+        <p>Current page defaultPage: {pageProps.defaultPage}</p>
+        <p>Outer layout mark: {layoutProps.mark ?? 'n/a'}</p>
         {children}
         <div className='panel-title'>Layout2-Inner End</div>
       </section>
