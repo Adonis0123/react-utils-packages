@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "layouts",
+  "title": "Layouts",
+  "description": "Layout composition utility using higher-order components. Includes withLayouts, useLayoutProps.",
+  "dependencies": [],
+  "files": [
+    {
+      "path": "packages/layouts/src/with-layouts.tsx",
+      "content": "import React, { useMemo } from 'react'\n\nimport { getDisplayName } from './internal/react-nodes'\nimport { AllPagePropsContext } from './context'\nimport { useLayoutProps } from './hooks'\n\nimport type { AllPagePropsValue, AnyComponent } from './context'\n\ntype PropsOf<C extends AnyComponent> = React.ComponentProps<C>\ntype LayoutComponent = React.ComponentType<React.PropsWithChildren>\n\nexport interface WithLayoutsOptions<\n  C extends AnyComponent,\n  K extends readonly (keyof C & string)[] = readonly [],\n> {\n  /** page properties to hoist */\n  propertiesHoist?: K\n}\n\n/**\n * Compose page with various layouts\n *\n * Example:\n *\n * `Page` and `[Layout1, Layout2]`\n *\n * result:\n *\n * ```\n * <Layout2>\n *   <Layout1>\n *     <Page />\n *   </Layout1>\n * </Layout2>\n * ```\n */\nexport function withLayouts<\n  C extends AnyComponent,\n  K extends readonly (keyof C & string)[] = readonly [],\n>(\n  Page: C,\n  Layouts: readonly LayoutComponent[],\n  options: WithLayoutsOptions<C, K> = {},\n): React.FC<PropsOf<C>> & Pick<C, K[number]> {\n  const { propertiesHoist = [] } = options\n  const pageDisplayName = getDisplayName(Page)\n\n  const WithLayoutsPage: React.FC<PropsOf<C>> = (pageProps) => {\n    const allPageProps = useLayoutProps()\n\n    let children = <Page {...pageProps} />\n\n    for (const Layout of Layouts) {\n      children = <Layout>{children}</Layout>\n    }\n\n    const pagePropsValue = useMemo<AllPagePropsValue>(() => {\n      const state: AllPagePropsValue = new Map(allPageProps)\n      state.set(Page, pageProps)\n      return state\n    }, [allPageProps, pageProps])\n\n    children = (\n      <AllPagePropsContext.Provider value={pagePropsValue}>\n        {children}\n      </AllPagePropsContext.Provider>\n    )\n\n    return children\n  }\n\n  WithLayoutsPage.displayName = `WithLayouts(${pageDisplayName})`\n\n  const WrappedPage = WithLayoutsPage as React.FC<PropsOf<C>> & Pick<C, K[number]>\n\n  propertiesHoist.forEach((item) => {\n    if (item in Page) {\n      const descriptor = Object.getOwnPropertyDescriptor(Page, item)\n      if (descriptor) {\n        Object.defineProperty(WrappedPage, item, descriptor)\n      }\n    }\n  })\n\n  return WrappedPage\n}\n",
+      "type": "registry:lib"
+    },
+    {
+      "path": "packages/layouts/src/context.tsx",
+      "content": "import React from 'react'\n\nexport type AnyComponent = React.ComponentType<any>\nexport type AllPagePropsValue = Map<AnyComponent, unknown>\n\nexport const AllPagePropsContext = React.createContext<AllPagePropsValue>(new Map())\n",
+      "type": "registry:lib"
+    },
+    {
+      "path": "packages/layouts/src/hooks.ts",
+      "content": "import type React from 'react'\nimport { useContext } from 'react'\n\nimport { getDisplayName } from './internal/react-nodes'\nimport { AllPagePropsContext } from './context'\nimport type { AnyComponent } from './context'\n\ntype PropsOf<C extends AnyComponent> = React.ComponentProps<C>\n\nexport function useLayoutProps(): ReadonlyMap<AnyComponent, unknown>\nexport function useLayoutProps<C extends AnyComponent>(component: C): Readonly<PropsOf<C>>\nexport function useLayoutProps<C extends AnyComponent>(component?: C) {\n  const allPageProps = useContext(AllPagePropsContext)\n\n  if (component) {\n    if (!allPageProps.has(component)) {\n      throw new Error(`useLayoutProps: props for \"${getDisplayName(component)}\" were not found in context`)\n    }\n    return allPageProps.get(component) as Readonly<PropsOf<C>>\n  }\n\n  return allPageProps as ReadonlyMap<AnyComponent, unknown>\n}\n",
+      "type": "registry:lib"
+    },
+    {
+      "path": "packages/layouts/src/internal/react-nodes.tsx",
+      "content": "import React from 'react'\n\nexport function getDisplayName(node: React.ComponentType<any>) {\n  return node.displayName || node.name || 'Component'\n}\n",
+      "type": "registry:lib"
+    }
+  ],
+  "type": "registry:lib"
+}

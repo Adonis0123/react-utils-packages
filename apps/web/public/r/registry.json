@@ -36,6 +36,31 @@
           "type": "registry:lib"
         }
       ]
+    },
+    {
+      "name": "layouts",
+      "type": "registry:lib",
+      "title": "Layouts",
+      "description": "Layout composition utility using higher-order components. Includes withLayouts, useLayoutProps.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "packages/layouts/src/with-layouts.tsx",
+          "type": "registry:lib"
+        },
+        {
+          "path": "packages/layouts/src/context.tsx",
+          "type": "registry:lib"
+        },
+        {
+          "path": "packages/layouts/src/hooks.ts",
+          "type": "registry:lib"
+        },
+        {
+          "path": "packages/layouts/src/internal/react-nodes.tsx",
+          "type": "registry:lib"
+        }
+      ]
     }
   ]
 }

@@ -69,7 +69,7 @@ Next.js 15 (App Router, React 19, Tailwind CSS 4). Consumes workspace packages v
 
 Source components for shadcn CLI distribution. Configured in root `registry.json`. Consumers install via:
 ```bash
-pnpm dlx shadcn@latest add https://<domain>/r/button.json
+pnpm dlx shadcn@latest add https://adonis-kit.vercel.app/r/button.json
 ```
 
 ## Coding Conventions
