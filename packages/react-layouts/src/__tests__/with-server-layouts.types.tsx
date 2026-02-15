@@ -1,6 +1,12 @@
 import React from 'react'
 
-import type { ServerComponent, ServerLayoutComponent } from '../server'
+import type {
+  AnyServerComponent,
+  ServerAllLayoutPropsValue,
+  ServerComponent,
+  ServerGetLayoutProps,
+  ServerLayoutComponent,
+} from '../server'
 import { withServerLayouts } from '../server'
 
 interface PageProps {
@@ -16,8 +22,41 @@ type PageComponent = ServerComponent<PageProps> & {
 const Page = (async ({ title }: PageProps) => <div>{title}</div>) as PageComponent
 Page.routeMeta = { auth: true }
 
-const Layout: ServerLayoutComponent<PageProps> = async ({ children, pageProps }) => {
+const MissingComponent: ServerComponent<{ missing: boolean }> = async () => null
+
+const Layout: ServerLayoutComponent<PageProps> = async ({
+  children,
+  pageProps,
+  allLayoutProps,
+  getLayoutProps,
+}) => {
   const title: string = pageProps.title
+  const pagePropsByComponent = getLayoutProps(Page)
+  const current = getLayoutProps<PageProps>()
+  const missing = getLayoutProps(MissingComponent)
+
+  const maybeTitleByComponent: string | undefined = pagePropsByComponent?.title
+  const maybeTitleByNoArg: string | undefined = current?.title
+  const isMissing: boolean = missing === undefined
+
+  allLayoutProps.get(Page)
+  allLayoutProps.has(Layout as unknown as AnyServerComponent)
+
+  // @ts-expect-error ReadonlyMap cannot be mutated
+  allLayoutProps.set(Page, { title: 'mutate' })
+
+  // @ts-expect-error props can be undefined
+  const requiredTitle: string = pagePropsByComponent.title
+
+  const readOnlyMap: ServerAllLayoutPropsValue = allLayoutProps
+  const getter: ServerGetLayoutProps = getLayoutProps
+
+  void maybeTitleByComponent
+  void maybeTitleByNoArg
+  void isMissing
+  void requiredTitle
+  void readOnlyMap
+  void getter
   void title
   return <>{children}</>
 }

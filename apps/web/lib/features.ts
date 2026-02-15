@@ -11,9 +11,9 @@ export const features: FeatureItem[] = [
     key: 'react-layouts',
     title: 'react-layouts',
     description:
-      'Nested layout composition showcase based on @adonis-kit/react-layouts, including useLayoutProps and context behaviors.',
+      'Runtime-split demo hub for @adonis-kit/react-layouts with dedicated showcase-client and showcase-server pages.',
     href: '/features/react-layouts',
-    tags: ['@adonis-kit/react-layouts', 'composition', 'context'],
+    tags: ['@adonis-kit/react-layouts', 'showcase-client', 'showcase-server'],
   },
   {
     key: 'registry',

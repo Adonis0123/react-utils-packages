@@ -32,6 +32,78 @@ describe('withServerLayouts', () => {
     expect(html).toContain('<span>hello</span>')
   })
 
+  it('injects allLayoutProps and getLayoutProps', async () => {
+    interface PageProps {
+      title: string
+    }
+
+    const Page: ServerComponent<PageProps> = async ({ title }) => <span>{title}</span>
+    const MissingComponent: ServerComponent<{ id: string }> = async () => null
+
+    const Layout: ServerLayoutComponent<PageProps> = ({ children, allLayoutProps, getLayoutProps }) => {
+      const componentProps = getLayoutProps(Page)
+      const latestProps = getLayoutProps<PageProps>()
+      const missingProps = getLayoutProps(MissingComponent)
+
+      return (
+        <div
+          data-has-page={String(allLayoutProps.has(Page))}
+          data-title-by-component={componentProps?.title}
+          data-title-by-noarg={latestProps?.title}
+          data-missing={String(missingProps === undefined)}
+        >
+          {children}
+        </div>
+      )
+    }
+
+    const Wrapped = withServerLayouts(Page, [Layout])
+    const result = await Wrapped({ title: 'hello' })
+    const html = renderToStaticMarkup(<>{result}</>)
+
+    expect(html).toContain('data-has-page="true"')
+    expect(html).toContain('data-title-by-component="hello"')
+    expect(html).toContain('data-title-by-noarg="hello"')
+    expect(html).toContain('data-missing="true"')
+  })
+
+  it('supports V2 chain visibility: child sees parent, parent does not see child', async () => {
+    interface PageProps {
+      slug: string
+    }
+
+    const ChildPage: ServerComponent<PageProps> = async ({ slug }) => <span>{slug}</span>
+
+    const ChildLayout: ServerLayoutComponent<PageProps> = ({ children, allLayoutProps, getLayoutProps }) => (
+      <div
+        data-child-sees-parent={String(allLayoutProps.has(ChildWrapped))}
+        data-child-parent-slug={getLayoutProps(ChildWrapped)?.slug}
+      >
+        {children}
+      </div>
+    )
+
+    const ChildWrapped = withServerLayouts(ChildPage, [ChildLayout])
+
+    const ParentLayout: ServerLayoutComponent<PageProps> = ({ children, allLayoutProps, getLayoutProps }) => (
+      <section
+        data-parent-sees-child={String(allLayoutProps.has(ChildPage))}
+        data-parent-child-missing={String(getLayoutProps(ChildPage) === undefined)}
+      >
+        {children}
+      </section>
+    )
+
+    const ParentWrapped = withServerLayouts(ChildWrapped, [ParentLayout])
+    const result = await ParentWrapped({ slug: 'chain' })
+    const html = renderToStaticMarkup(<>{result}</>)
+
+    expect(html).toContain('data-child-sees-parent="true"')
+    expect(html).toContain('data-child-parent-slug="chain"')
+    expect(html).toContain('data-parent-sees-child="false"')
+    expect(html).toContain('data-parent-child-missing="true"')
+  })
+
   it('assigns displayName for anonymous layout during execution', async () => {
     const Page: ServerComponent<{}> = async () => null
 

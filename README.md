@@ -15,12 +15,59 @@ A pnpm monorepo for publishing reusable React utilities and a personal shadcn re
 - `@adonis-kit/react-layouts/client` is the explicit client entry (`withLayouts`, `useLayoutProps`, `useAllLayoutProps`).
 - `@adonis-kit/react-layouts/server` is the explicit server entry (`withServerLayouts`, `ServerLayoutComponent`).
 - `useLayoutProps` and `useAllLayoutProps` are client-only APIs and must be used inside client components.
+- In server layouts, `allLayoutProps` and `getLayoutProps` are injected via `ServerLayoutComponent` props.
 
-Minimal usage:
+Client usage:
 
 ```tsx
-import { withLayouts } from '@adonis-kit/react-layouts/client'
-import { withServerLayouts } from '@adonis-kit/react-layouts/server'
+'use client'
+
+import { withLayouts, useAllLayoutProps, useLayoutProps } from '@adonis-kit/react-layouts/client'
+
+const Page: React.FC<{ title: string }> = ({ title }) => <h2>{title}</h2>
+
+const Layout: React.FC<React.PropsWithChildren> = ({ children }) => {
+  const pageProps = useLayoutProps(Page)
+  const allProps = useAllLayoutProps()
+  return (
+    <div data-layout-count={allProps.size}>
+      <header>{pageProps?.title ?? 'Untitled'}</header>
+      {children}
+    </div>
+  )
+}
+
+export const ClientPage = withLayouts(Page, [Layout])
+```
+
+Server usage:
+
+```tsx
+import { withServerLayouts, type ServerLayoutComponent } from '@adonis-kit/react-layouts/server'
+
+type PageProps = { title: string }
+
+const Page = async ({ title }: PageProps) => <article>{title}</article>
+
+const serverPageLayout: ServerLayoutComponent<PageProps> = ({
+  children,
+  pageProps,
+  allLayoutProps,
+  getLayoutProps,
+}) => {
+  const latest = getLayoutProps<PageProps>()?.title
+  const fromPage = getLayoutProps(Page)?.title
+
+  return (
+    <section data-has-page={String(allLayoutProps.has(Page))}>
+      <h1>{pageProps.title}</h1>
+      <small>{latest ?? fromPage ?? 'n/a'}</small>
+      {children}
+    </section>
+  )
+}
+
+export const ServerPage = withServerLayouts(Page, [serverPageLayout])
 ```
 
 ## Apps

@@ -41,7 +41,7 @@ pnpm dlx shadcn@latest add https://adonis-kit.vercel.app/r/react-layouts.json
 ```tsx
 'use client'
 
-import { withLayouts, useLayoutProps } from '@adonis-kit/react-layouts/client'
+import { withLayouts, useAllLayoutProps, useLayoutProps } from '@adonis-kit/react-layouts/client'
 
 const Page: React.FC<{ title: string }> = ({ title }) => <h2>{title}</h2>
 
@@ -55,7 +55,21 @@ const Header: React.FC<React.PropsWithChildren> = ({ children }) => {
   )
 }
 
-export const App = withLayouts(Page, [Header])
+const Inspector: React.FC<React.PropsWithChildren> = ({ children }) => {
+  const latest = useLayoutProps<{ title: string }>()
+  const allProps = useAllLayoutProps()
+
+  return (
+    <section>
+      <small>
+        Latest title: {latest?.title ?? 'Untitled'} | Known props entries: {allProps.size}
+      </small>
+      {children}
+    </section>
+  )
+}
+
+export const App = withLayouts(Page, [Header, Inspector])
 ```
 
 ### Server Example
@@ -67,14 +81,28 @@ type PageProps = { title: string }
 
 const Page = async ({ title }: PageProps) => <article>{title}</article>
 
-const ShellLayout: ServerLayoutComponent<PageProps> = async ({ children, pageProps }) => (
-  <section>
-    <h1>{pageProps.title}</h1>
-    {children}
-  </section>
-)
+const serverPageLayout: ServerLayoutComponent<PageProps> = async ({
+  children,
+  pageProps,
+  allLayoutProps,
+  getLayoutProps,
+}) => {
+  const fromPage = getLayoutProps(Page)?.title
+  const latest = getLayoutProps<PageProps>()?.title
+  const hasPage = allLayoutProps.has(Page)
 
-export const ServerPage = withServerLayouts(Page, [ShellLayout])
+  return (
+    <section data-has-page={String(hasPage)}>
+      <h1>{pageProps.title}</h1>
+      <small>
+        By component: {fromPage ?? 'n/a'} | Latest: {latest ?? 'n/a'}
+      </small>
+      {children}
+    </section>
+  )
+}
+
+export const ServerPage = withServerLayouts(Page, [serverPageLayout])
 ```
 
 ## Runtime Matrix
@@ -86,6 +114,8 @@ export const ServerPage = withServerLayouts(Page, [ShellLayout])
 | `useAllLayoutProps` | Yes (`/client`) | No |
 | `withServerLayouts` | No | Yes (`/server`) |
 | `ServerLayoutComponent` | No | Yes (`/server`) |
+| `getLayoutProps` (layout arg) | No | Yes (`/server`) |
+| `allLayoutProps` (layout arg) | No | Yes (`/server`) |
 
 ## Next.js App Router Guidance
 
@@ -120,14 +150,33 @@ Composes a server page with server layouts. Each layout receives:
 {
   children: React.ReactNode
   pageProps: PageProps
+  allLayoutProps: ReadonlyMap<AnyServerComponent, unknown>
+  getLayoutProps: {
+    <T = unknown>(): T | undefined
+    <C extends AnyServerComponent>(component: C): unknown | undefined // inferred from C in TS
+  }
 }
 ```
+
+`getLayoutProps(component)` returns `undefined` when the component is missing.  
+`getLayoutProps()` (no args) returns the latest props in the current server composition chain.
 
 Supports async page and async layouts.
 
 #### `ServerLayoutComponent<PageProps>`
 
-Type helper for server layout components that accept `children` and `pageProps`.
+Type helper for server layout components that accept `children`, `pageProps`, `allLayoutProps`, and `getLayoutProps`.
+
+Recommended pattern:
+
+```tsx
+const serverPageLayout: ServerLayoutComponent<PageProps> = ({ children, pageProps }) => (
+  <section>
+    <h1>{pageProps.title}</h1>
+    {children}
+  </section>
+)
+```
 
 ## Migration
 

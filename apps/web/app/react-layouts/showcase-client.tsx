@@ -55,7 +55,7 @@ const Sidebar: React.FC<React.PropsWithChildren> = ({ children }) => {
     <Card className='border-emerald-300 bg-emerald-50'>
       <CardHeader>
         <CardTitle>Sidebar</CardTitle>
-        <CardDescription>Outermost layout — wraps Header and Page.</CardDescription>
+        <CardDescription>Outermost layout wraps Header and Page.</CardDescription>
       </CardHeader>
       <CardContent className='flex gap-4'>
         <nav className='w-24 shrink-0 rounded bg-emerald-100 p-2 text-xs text-emerald-700'>
@@ -97,7 +97,8 @@ const PropsInspector: React.FC<React.PropsWithChildren> = ({ children }) => {
       <CardHeader>
         <CardTitle>PropsInspector</CardTitle>
         <CardDescription>
-          Uses <code>useLayoutProps&lt;T&gt;()</code> (no argument) and <code>useAllLayoutProps()</code>
+          Uses <code>useLayoutProps&lt;T&gt;()</code> (no argument) and{' '}
+          <code>useAllLayoutProps()</code>
         </CardDescription>
       </CardHeader>
       <CardContent className='space-y-2 text-sm text-slate-700'>
@@ -144,7 +145,7 @@ const AdvancedExample = withLayouts(AdvancedPage, [PropsInspector, NestedCompose
 
 // ─── Showcase ────────────────────────────────────────────────────────────────
 
-export function ReactLayoutsDemo({ compact = false }: { compact?: boolean }) {
+export function ReactLayoutsClientDemo({ compact = false }: { compact?: boolean }) {
   const [title, setTitle] = useState('Hello')
   const [user, setUser] = useState('Alice')
 
@@ -152,48 +153,49 @@ export function ReactLayoutsDemo({ compact = false }: { compact?: boolean }) {
     <div className='grid gap-8'>
       {!compact && (
         <>
-          <h2 className='text-xl font-semibold'>react-layouts Showcase</h2>
+          <h2 className='text-xl font-semibold'>react-layouts showcase-client</h2>
           <p className='text-sm text-slate-600'>
-            Live examples of <code>@adonis-kit/react-layouts</code> — declarative layout composition for React.
+            Client entry demo for <code>@adonis-kit/react-layouts/client</code>, covering
+            layout composition and props hooks.
           </p>
         </>
       )}
 
-      {/* Basic Example */}
       <section className='grid gap-3'>
-        <h3 className='text-lg font-medium'>Basic — Page + Named Layouts</h3>
+        <h3 className='text-lg font-medium'>Basic - Page + Named Layouts</h3>
         <p className='text-sm text-slate-500'>
-          <code>withLayouts(BasicPage, [Header, Sidebar])</code> — Header reads page props, Sidebar wraps everything.
+          <code>withLayouts(BasicPage, [Header, Sidebar])</code> where Header reads page props
+          and Sidebar wraps everything.
         </p>
         <div>
-          <Button type='button' variant='outline' onClick={() => setTitle((v) => v === 'Hello' ? 'World' : 'Hello')}>
+          <Button
+            type='button'
+            variant='outline'
+            onClick={() => setTitle((v) => (v === 'Hello' ? 'World' : 'Hello'))}
+          >
             Toggle title: {title}
           </Button>
         </div>
         <BasicExample title={title} defaultCount={0} />
       </section>
 
-      {/* Advanced Example */}
       <section className='grid gap-3'>
-        <h3 className='text-lg font-medium'>Advanced — No-arg Hook, AllProps, Nested Composition</h3>
+        <h3 className='text-lg font-medium'>Advanced - No-arg Hook, AllProps, Nested Composition</h3>
         <p className='text-sm text-slate-500'>
-          <code>useLayoutProps&lt;T&gt;()</code> without argument, <code>useAllLayoutProps()</code>, and a layout that itself uses <code>withLayouts</code>.
+          <code>useLayoutProps&lt;T&gt;()</code> without argument,{' '}
+          <code>useAllLayoutProps()</code>, and nested <code>withLayouts</code>.
         </p>
         <div>
-          <Button type='button' variant='outline' onClick={() => setUser((v) => v === 'Alice' ? 'Bob' : 'Alice')}>
+          <Button
+            type='button'
+            variant='outline'
+            onClick={() => setUser((v) => (v === 'Alice' ? 'Bob' : 'Alice'))}
+          >
             Toggle user: {user}
           </Button>
         </div>
         <AdvancedExample user={user} />
       </section>
-
-      <p className='text-xs text-slate-400'>
-        Inspired by{' '}
-        <a href='https://github.com/yunsii/react-dx' className='underline hover:text-slate-600' target='_blank' rel='noopener noreferrer'>
-          react-dx
-        </a>
-        . Special thanks to the original author for the foundational ideas.
-      </p>
     </div>
   )
 }
