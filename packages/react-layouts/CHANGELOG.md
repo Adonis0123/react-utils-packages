@@ -1,5 +1,11 @@
 # @adonis-kit/react-layouts
 
+## 0.0.3
+
+### Patch Changes
+
+- manual release via workflow_dispatch
+
 ## 0.0.2
 
 ### Patch Changes
