@@ -1,6 +1,11 @@
 # @adonis-kit/react-layouts
 
+[![npm](https://img.shields.io/npm/v/@adonis-kit/react-layouts)](https://www.npmjs.com/package/@adonis-kit/react-layouts)
+[![GitHub](https://img.shields.io/github/license/Adonis0123/adonis-kit)](https://github.com/Adonis0123/adonis-kit)
+
 Declarative layout composition for React with dual-runtime entry points for Next.js App Router style architectures.
+
+**GitHub**: https://github.com/Adonis0123/adonis-kit
 
 ## Install
 
