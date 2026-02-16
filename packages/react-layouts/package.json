@@ -4,6 +4,15 @@
   "type": "module",
   "description": "React layout composition utilities.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Adonis0123/adonis-kit.git",
+    "directory": "packages/react-layouts"
+  },
+  "homepage": "https://github.com/Adonis0123/adonis-kit/tree/main/packages/react-layouts",
+  "bugs": {
+    "url": "https://github.com/Adonis0123/adonis-kit/issues"
+  },
   "sideEffects": false,
   "main": "./dist/index.js",
   "module": "./dist/index.js",
