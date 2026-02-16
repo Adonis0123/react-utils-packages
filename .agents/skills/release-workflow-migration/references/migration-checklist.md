@@ -7,6 +7,7 @@
 - [ ] 复制 `.github/workflows/release-rollback.yml`
 - [ ] 复制 `scripts/release/create-changeset.mjs`
 - [ ] 复制 `scripts/release/validate-changeset-config.mjs`
+- [ ] （可选）复制 `scripts/release/detect-build-filters.mjs`（仅动态构建过滤场景）
 
 ## B. 白名单与路径
 
@@ -20,6 +21,9 @@
 - [ ] 单包测试命令已适配或移除
 - [ ] 根目录 `package.json` 已补充可选调试脚本（如需要）
 - [ ] 发布前配置校验命令已接入 workflow（`validate-changeset-config.mjs`）
+- [ ] 已确认 workflow 调用方式：直接 `node scripts/release/*.mjs` 或 `pnpm release:*`
+- [ ] 若使用脚本别名，workflow 与 `package.json` 脚本名保持一致
+- [ ] 若启用动态过滤，`detect-build-filters.mjs` 输出已被 workflow 实际消费
 
 ## D. 平台配置
 
@@ -42,6 +46,8 @@
 - [ ] 合并后 `Release` 创建/更新版本 PR
 - [ ] 合并版本 PR 后发布成功
 - [ ] `Release Rollback` 可回退 `latest` 到指定历史版本
+- [ ] （动态过滤场景）单包改动时只构建目标包
+- [ ] （动态过滤场景）共享文件改动时会构建全部白名单包
 
 ## G. 回归与风险
 

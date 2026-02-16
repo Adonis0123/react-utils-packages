@@ -1,7 +1,7 @@
 ---
 name: release-workflow-migration
 description: Use when migrating this repository's Changesets release workflow (Release, Release Prepare, Release Rollback) to another project. Includes package whitelist adaptation, workflow setup, script migration, and validation checklist.
-version: 1.0.0
+version: 1.1.0
 ---
 
 # Release Workflow Migration
@@ -45,6 +45,10 @@ version: 1.0.0
 - `scripts/release/create-changeset.mjs`
 - `scripts/release/validate-changeset-config.mjs`
 
+可选复制（仅在你要做“按改动动态过滤构建”时）：
+
+- `scripts/release/detect-build-filters.mjs`
+
 ### 2. 替换白名单配置
 
 至少同步修改以下位置：
@@ -63,6 +67,21 @@ version: 1.0.0
 - 单测（示例）：`pnpm -C packages/react-layouts test`
 
 如果目标仓库不是 pnpm/turbo，替换为对应命令。
+
+### 3.1 脚本别名与 workflow 调用方式（避免迁移误解）
+
+当前仓库 `package.json` 提供了：
+
+- `release:create-changeset`
+- `release:validate-config`
+- `release:detect-build-filters`
+
+但现有 workflow 是“直接调用 node 脚本路径”，不是通过上述别名调用。迁移时两种方式都可行：
+
+1. 保持当前做法（推荐）：workflow 直接调用 `node scripts/release/*.mjs`  
+2. 改为脚本别名：workflow 调用 `pnpm release:*`，便于命令统一管理
+
+不论采用哪种方式，需确保 workflow 与 `package.json` 不出现“脚本名改了但 workflow 未同步”的漂移。
 
 ### 4. 校正分支与权限
 
@@ -111,6 +130,11 @@ version: 1.0.0
 4. 合并版本 PR 后确认 npm 发布成功
 5. 运行 `Release Rollback`，确认 `latest` 可恢复到指定历史版本
 
+如启用动态构建过滤（`detect-build-filters.mjs`）再额外验证：
+
+6. 仅修改单包目录时，只构建对应包
+7. 修改共享触发文件（如 `pnpm-lock.yaml`）时，回退到构建全部发布白名单包
+
 ## 交付标准
 
 迁移完成时输出：
@@ -119,6 +143,11 @@ version: 1.0.0
 2. 白名单映射（包名 -> 路径）
 3. 验证结果（3 条 workflow）
 4. 风险与限制（例如暂不支持多包一次发布）
+
+并明确以下策略选择：
+
+- 是否启用 `detect-build-filters` 动态构建过滤
+- workflow 是直接调用 node 脚本，还是调用 `package.json` 脚本别名
 
 ## 参考
 

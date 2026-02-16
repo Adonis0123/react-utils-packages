@@ -118,6 +118,72 @@ Changesets 配置必须包含以下两点：
    - `npm view @adonis-kit/react-layouts version`
    - `npm view @adonis-kit/ui version`
 
+## 4.1 发布流程图（Mermaid）
+
+```mermaid
+flowchart TD
+  A["开始发布"] --> B["手动触发 Release Prepare"]
+  B --> C["选择 package + bump + summary"]
+  C --> D["生成 .changeset/release-*.md"]
+  D --> E["创建 release-prepare PR"]
+  E --> F{"合并到 main ?"}
+  F -- "否" --> Z1["等待合并"]
+  F -- "是" --> G["触发 Release (push main)"]
+  G --> H["构建 publishable packages"]
+  H --> I{"是否存在未消费 changeset ?"}
+  I -- "是" --> J["创建/更新 Changesets 版本 PR"]
+  J --> K{"版本 PR 合并到 main ?"}
+  K -- "否" --> Z2["等待合并"]
+  K -- "是" --> L["再次触发 Release"]
+  L --> M["changeset publish (npm)"]
+  M --> N["发布成功并更新 tag/release"]
+  I -- "否" --> O["直接尝试 publish 未发布版本"]
+  O --> P{"npm 上有未发布新版本 ?"}
+  P -- "有" --> M
+  P -- "无" --> Q["No unpublished projects to publish"]
+  N --> R{"需要回退 latest ?"}
+  Q --> R
+  R -- "否" --> S["结束"]
+  R -- "是" --> T["手动触发 Release Rollback"]
+  T --> U["npm dist-tag add <pkg>@<version> latest"]
+  U --> S
+```
+
+图中关键判定点：
+
+- `是否存在未消费 changeset`：决定是先创建版本 PR，还是直接尝试 publish。
+- `npm 上有未发布新版本`：对应你日志里的场景，如果版本已发布会走 `No unpublished projects to publish`。
+- `Release Rollback`：仅回退 `latest` dist-tag，不删除已发布版本。
+
+## 4.2 `package.json` 发布脚本要不要手动执行？
+
+当前脚本如下：
+
+- `pnpm release`（`changeset publish`）
+- `pnpm release:create-changeset`（`node scripts/release/create-changeset.mjs`）
+- `pnpm release:detect-build-filters`（`node scripts/release/detect-build-filters.mjs`）
+- `pnpm release:validate-config`（`node scripts/release/validate-changeset-config.mjs`）
+
+结论（当前仓库默认流程）：
+
+1. 日常发布不需要你手动执行这 4 个命令。  
+2. 推荐入口是 GitHub Actions：手动跑 `Release Prepare`，然后按 PR 流程合并。  
+3. `Release` 工作流会自动执行发布必需步骤（包括校验配置与最终 publish）。
+
+各命令在当前流程中的定位：
+
+| 命令 | 当前是否被 workflow 使用 | 你是否需要手动执行 |
+| --- | --- | --- |
+| `pnpm release` | 是。由 `Release` 中 `changesets/action` 调用（`publish: pnpm release`） | 通常不需要；仅在 CI 失效且你明确要本地直发时才考虑 |
+| `pnpm release:create-changeset` | 功能被 `Release Prepare` 使用（当前 workflow 直接调用 `node scripts/release/create-changeset.mjs`） | 不需要，除非你要本地手工生成指定格式 changeset |
+| `pnpm release:validate-config` | 功能被 `Release` 与 `Release Prepare` 使用（当前 workflow 直接调用 `node scripts/release/validate-changeset-config.mjs`） | 不需要，可作为本地自检命令 |
+| `pnpm release:detect-build-filters` | 否（当前 release workflow 未接入） | 不需要；属于预留/优化脚本 |
+
+补充说明：
+
+- 本仓库现在采用“保守稳定”策略：`Release` 固定构建 `@adonis-kit/react-layouts` 和 `@adonis-kit/ui`，未启用按改动文件动态过滤构建。
+- 因此 `release:detect-build-filters` 目前不会影响实际发包结果。
+
 ## 5. 常见问题
 
 ### Q1：为什么版本一直是 `0.0.0`？
