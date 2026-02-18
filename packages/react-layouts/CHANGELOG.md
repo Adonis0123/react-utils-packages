@@ -1,5 +1,11 @@
 # @adonis-kit/react-layouts
 
+## 0.0.4
+
+### Patch Changes
+
+- Add repository, homepage, and bugs metadata to package.json
+
 ## 0.0.3
 
 ### Patch Changes
