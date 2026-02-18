@@ -2,7 +2,7 @@ import { cp, mkdir, readdir, rename, rm, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-type TargetName = 'claude' | 'codex'
+type TargetName = 'claude'
 
 type CliOptions = {
   source: string
@@ -12,11 +12,10 @@ type CliOptions = {
 
 const TARGET_DIRECTORY_MAP: Record<TargetName, string> = {
   claude: '.claude/skills',
-  codex: '.codex/skills',
 }
 
 const DEFAULT_SOURCE = '.agents/skills'
-const DEFAULT_TARGETS = 'claude,codex'
+const DEFAULT_TARGETS = 'claude'
 
 function getOptionValue(args: string[], index: number, key: string): string {
   const value = args[index + 1]
@@ -38,8 +37,8 @@ function parseTargets(rawTargets: string): TargetName[] {
 
   const normalized: TargetName[] = []
   for (const item of parts) {
-    if (item !== 'claude' && item !== 'codex') {
-      throw new Error(`Unknown target "${item}". Use claude, codex, or claude,codex`)
+    if (item !== 'claude') {
+      throw new Error(`Unknown target "${item}". Only "claude" is supported`)
     }
 
     if (!normalized.includes(item)) {
@@ -109,7 +108,7 @@ function printHelp() {
   console.log('')
   console.log('Options:')
   console.log('  --source <path>       Source skills directory (default: .agents/skills)')
-  console.log('  --targets <list>      Targets: claude,codex | claude | codex (default: claude,codex)')
+  console.log('  --targets <list>      Targets: claude (default: claude)')
   console.log('  --dry-run             Print planned actions without copying files')
   console.log('  --help                Show help')
 }

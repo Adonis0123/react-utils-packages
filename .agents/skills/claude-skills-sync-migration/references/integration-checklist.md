@@ -12,12 +12,11 @@ Use this checklist when migrating the skill-sync workflow to another repository.
 ## 2. Source and Target Directory Rules
 
 - Default source directory: `.agents/skills`
-- Default targets:
+- Default target:
   - `.claude/skills`
-  - `.codex/skills`
 - Generated script supports runtime overrides:
   - `--source=<path>`
-  - `--targets=claude|codex|claude,codex`
+  - `--targets=claude`
   - `--dry-run`
 - Source directory must exist and be a directory; otherwise the script exits with code `1`.
 - Sync replacement must be atomic:
@@ -30,6 +29,7 @@ Use this checklist when migrating the skill-sync workflow to another repository.
 - Ensure `scripts.skills:sync:llm` exists and points to the generated TS script.
 - Ensure `is-ci` dependency exists:
   - if missing in `dependencies` and `devDependencies`, bootstrap must add `devDependencies.is-ci` (default `^4.1.0`)
+- Ensure `.gitignore` includes `/.claude/skills`.
 - Ensure `--script-name` validation is enforced:
   - allowed pattern: `[A-Za-z0-9:._-]+`
   - invalid names (for example `skills:sync:llm;rm -rf /`) must fail with non-zero exit code
@@ -61,11 +61,6 @@ pnpm run skills:sync:llm -- --dry-run
 pnpm run skills:sync:llm -- --targets=claude
 ```
 
-- Codex only:
-```bash
-pnpm run skills:sync:llm -- --targets=codex
-```
-
 - Full sync:
 ```bash
 pnpm run skills:sync:llm
@@ -80,6 +75,9 @@ node ./scripts/bootstrap-sync-skills.mjs --script-name='skills:sync:llm;echo x'
 - Missing `is-ci` is auto-installed:
   - precondition: no `is-ci` in `dependencies`/`devDependencies`
   - expected: bootstrap writes `devDependencies.is-ci`
+- `.gitignore` is updated:
+  - precondition: `.gitignore` does not contain `/.claude/skills`
+  - expected: bootstrap appends `/.claude/skills`
 - Postinstall substring false-positive is avoided:
   - precondition: `postinstall` contains `my-skills:sync:llm-extra`
   - expected: bootstrap still appends real sync command

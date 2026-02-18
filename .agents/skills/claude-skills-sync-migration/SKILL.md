@@ -1,9 +1,9 @@
 ---
 name: claude-skills-sync-migration
-description: Scaffold reusable skill-sync automation for migrating repositories. Use when users ask to copy `.agents/skills` into `.claude/skills` and `.codex/skills`, generate `skills:sync:*` scripts, inject package.json scripts/postinstall hooks, or migrate this sync workflow to another project.
+description: Scaffold reusable Claude skill-sync automation for migrating repositories. Use when users ask to copy `.agents/skills` into `.claude/skills`, generate `skills:sync:*` scripts, inject package.json scripts/postinstall hooks, or migrate this sync workflow to another project.
 ---
 
-# Claude/Codex Skills Sync Migration
+# Claude Skills Sync Migration
 
 将当前仓库的 skills 同步能力迁移到其他项目时，使用本 Skill。
 
@@ -15,15 +15,16 @@ description: Scaffold reusable skill-sync automation for migrating repositories.
 2. 注入 `scripts.skills:sync:llm` 命令。
 3. 自动确保 `devDependencies.is-ci` 存在（缺失时自动写入）。
 4. 以幂等方式合并 `postinstall`，默认注入 `is-ci` CI guard。
-5. 同步目标同时支持 `.claude/skills` 与 `.codex/skills`。
+5. 同步目标仅为 `.claude/skills`。
 6. 同步过程采用原子切换，避免复制失败时清空目标目录。
+7. 自动确保目标仓库 `.gitignore` 包含 `/.claude/skills`。
 
 ## Execution Flow
 
 1. 收集上下文
 - 确认目标仓库根目录（存在 `package.json`）。
 - 确认源目录是否仍使用 `.agents/skills`（默认值）。
-- 确认是否需要双目标（默认 `claude,codex`）。
+- 确认目标目录为 `.claude/skills`（默认且唯一目标）。
 
 2. 执行自动落地脚本
 - 在目标仓库执行：
@@ -41,21 +42,19 @@ node /path/to/claude-skills-sync-migration/scripts/bootstrap-sync-skills.mjs --p
 ```bash
 pnpm run skills:sync:llm -- --dry-run
 ```
-- 仅同步 Claude：
+- 显式指定目标（可选）：
 ```bash
 pnpm run skills:sync:llm -- --targets=claude
-```
-- 仅同步 Codex：
-```bash
-pnpm run skills:sync:llm -- --targets=codex
 ```
 
 4. 输出变更摘要
 - 列出新增/更新文件：
   - `scripts/sync-llm-skills.ts`
   - `package.json`
+  - `.gitignore`
 - 说明 `is-ci` 依赖处理结果（新增或已存在）。
 - 说明 postinstall 合并结果（新建、追加、或已存在跳过），并标注 CI guard 是否生效。
+- 说明 `.gitignore` 的 `/.claude/skills` 忽略规则处理结果（新增或已存在）。
 - 附上验证命令与执行结果。
 
 ## Resources

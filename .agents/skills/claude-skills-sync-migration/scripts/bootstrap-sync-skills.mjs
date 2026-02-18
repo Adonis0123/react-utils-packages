@@ -9,6 +9,7 @@ const DEFAULT_SCRIPT_PATH = 'scripts/sync-llm-skills.ts'
 const DEFAULT_SCRIPT_COMMAND_PREFIX = 'node --experimental-strip-types'
 const DEFAULT_IS_CI_VERSION = '^4.1.0'
 const SCRIPT_NAME_PATTERN = /^[A-Za-z0-9:._-]+$/
+const CLAUDE_SKILLS_GITIGNORE_ENTRY = '/.claude/skills'
 
 function printHelp() {
   console.log('Usage: node bootstrap-sync-skills.mjs [options]')
@@ -250,6 +251,30 @@ async function ensureTemplateScript(projectRoot, scriptPath, templateContent) {
   return { path: absoluteScriptPath, changed: true }
 }
 
+function hasGitignoreEntry(content, entry) {
+  const normalizedLines = content
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+
+  return normalizedLines.includes(entry) || normalizedLines.includes(entry.replace(/^\//, ''))
+}
+
+async function ensureGitignoreEntry(projectRoot, entry) {
+  const gitignorePath = path.join(projectRoot, '.gitignore')
+  const currentContent = await readFile(gitignorePath, 'utf8').catch(() => '')
+
+  if (hasGitignoreEntry(currentContent, entry)) {
+    return { path: gitignorePath, changed: false }
+  }
+
+  const base = currentContent.trimEnd()
+  const next = base ? `${base}\n${entry}\n` : `${entry}\n`
+  await writeFile(gitignorePath, next, 'utf8')
+  return { path: gitignorePath, changed: true }
+}
+
 function escapeRegex(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
@@ -298,6 +323,7 @@ async function main() {
     scriptPathInfo.fileSystemPath,
     templateContent,
   )
+  const gitignoreResult = await ensureGitignoreEntry(projectRoot, CLAUDE_SKILLS_GITIGNORE_ENTRY)
 
   const { packageJson, packageJsonPath } = await loadPackageJson(projectRoot)
   const { added: isCiAdded } = ensureIsCiDependency(packageJson)
@@ -335,6 +361,9 @@ async function main() {
   console.log(`[bootstrap-sync-skills] Project: ${projectRoot}`)
   console.log(
     `[bootstrap-sync-skills] ${templateScriptResult.changed ? 'Updated' : 'Reused'} template: ${templateScriptResult.path}`,
+  )
+  console.log(
+    `[bootstrap-sync-skills] ${gitignoreResult.changed ? 'Added' : 'Kept'} .gitignore entry: ${CLAUDE_SKILLS_GITIGNORE_ENTRY}`,
   )
   console.log(
     `[bootstrap-sync-skills] ${syncScriptChanged ? 'Set' : 'Kept'} script: ${options.scriptName} = "${syncCommand}"`,
